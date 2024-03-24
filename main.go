@@ -15,7 +15,7 @@ func insertarray(array1 [4]int, array2 [5]int) [9]int {
 	return combarray
 
 }
-func sortarry(combaray [9]int) [9]int {
+func sortarray(combaray [9]int) [9]int {
 	for i := 0; i < len(combaray)-1; i++ {
 		for j := 0; j < len(combaray)-i-1; j++ {
 
@@ -41,5 +41,5 @@ func main() {
 		fmt.Scan(&array2[i])
 	}
 	fmt.Println(insertarray(array1, array2))
-	fmt.Println(sortarry(insertarray(array1, array2)))
+	fmt.Println(sortarray(insertarray(array1, array2)))
 }
