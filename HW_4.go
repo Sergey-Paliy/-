@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
 	"net/http"
@@ -14,12 +15,13 @@ type User struct {
 	Friends  []string `json:"friends"`
 }
 
-var users = make(map[string]User) // Переменная для хранения пользователей
+var users = make(map[string]User)
 
 func main() {
 	r := chi.NewRouter()
 	r.Post("/create", CreateUser)
 	r.Get("/user/{userID}", GetUser)
+	r.Post("/make_friends", MakeFriends)
 
 	http.ListenAndServe(":8080", r)
 }
@@ -32,9 +34,9 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id := generateUserID() // Генерация уникального ID для пользователя
+	id := generateUserID()
 	newUser.ID = id
-	users[id] = newUser // Сохранение пользователя в мапе
+	users[id] = newUser
 
 	jsonResponse := map[string]string{"id": id}
 	response, err := json.Marshal(jsonResponse)
@@ -53,16 +55,38 @@ func generateUserID() string {
 	return id
 }
 func GetUser(w http.ResponseWriter, r *http.Request) {
-	// Получаем уникальный идентификатор пользователя из URL
 	userID := chi.URLParam(r, "userID")
 
-	// Получаем данные пользователя из вашего хранилища
 	user, ok := users[userID]
 	if !ok {
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
 
-	// Преобразуем данные пользователя в формат JSON и отправляем их клиенту
 	json.NewEncoder(w).Encode(user)
+}
+
+func MakeFriends(w http.ResponseWriter, r *http.Request) {
+	type FriendRequest struct {
+		SourceID string `json:"source_id"`
+		TargetID string `json:"target_id"`
+	}
+
+	var request FriendRequest
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	sourceUser, ok1 := users[request.SourceID]
+	targetUser, ok2 := users[request.TargetID]
+	if !ok1 || !ok2 {
+		http.Error(w, "One or both users not found", http.StatusBadRequest)
+		return
+	}
+
+	responseMessage := fmt.Sprintf("%s и %s теперь друзья", sourceUser.UserName, targetUser.UserName)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(responseMessage))
 }
